@@ -45,8 +45,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_INITIALIZATION));
 
-    MSG msg;
+	MSG msg = { 0 };
 
+#ifdef USE_DEFAULT_MSG_LOOP
     // 主消息循环:
     while (GetMessage(&msg, nullptr, 0, 0))
     {
@@ -56,6 +57,23 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             DispatchMessage(&msg);
         }
     }
+#else
+	while (WM_QUIT != msg.message)
+	{
+		if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
+		{
+			if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+			{
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+		else
+		{
+			d3d11_initializer_.Render();
+		}
+	}
+#endif
 
 	d3d11_initializer_.Uninitialize();
 
@@ -118,11 +136,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    RECT clnt_rect;
    GetClientRect(hWnd, &clnt_rect);
 
-   if (!d3d11_initializer_.Initialize(clnt_rect.right - clnt_rect.left,
+   if (!d3d11_initializer_.InitializeWithDefault(clnt_rect.right - clnt_rect.left,
 	   clnt_rect.bottom - clnt_rect.top,
 	   hWnd,
-	   0,
-	   true))
+	   false))
    {
 	   return FALSE;
    }
@@ -167,6 +184,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             HDC hdc = BeginPaint(hWnd, &ps);
             // TODO: 在此处添加使用 hdc 的任何绘图代码...
             EndPaint(hWnd, &ps);
+
         }
         break;
     case WM_DESTROY:
