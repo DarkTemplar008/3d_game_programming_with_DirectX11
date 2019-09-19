@@ -2,6 +2,8 @@
 #include <atlcomcli.h>
 #include <d3d11.h>
 
+#include "GameTimer.h"
+
 class D3D11Initializer
 {
 public:
@@ -14,6 +16,7 @@ public:
 	void Render();
 
 	void Uninitialize();
+
 private:
 	CComPtr<ID3D11Device>			d3d11_device_;
 	CComPtr<ID3D11DeviceContext>	d3d11_device_ctx_;
@@ -24,5 +27,7 @@ private:
 	CComPtr<ID3D11DepthStencilView>	d3d11_depth_stencil_view_;
 
 	UINT							d3d11_msaa_4x_quality_	= 0;
+
+	GameTimer						timer_;
 };
 

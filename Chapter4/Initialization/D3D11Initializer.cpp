@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "D3D11Initializer.h"
+#include <atlstr.h>
+#include <deque>
 
 #pragma comment(lib, "D3D11.lib")
 #pragma comment(lib, "DXGI.lib")
@@ -118,6 +120,8 @@ bool D3D11Initializer::InitializeWithDefault(
 	viewport.Height = height;
 	viewport.MaxDepth = 1.0f;
 	d3d11_device_ctx_->RSSetViewports(1, &viewport);
+
+	timer_.Start();
 	return true;
 }
 
@@ -130,6 +134,36 @@ bool D3D11Initializer::Initialize(int width, int height, HWND hwnd, int monitor,
 	CComPtr<IDXGIAdapter> dxgi_adapter;
 	hr = dxgi_factory_->EnumAdapters(monitor, &dxgi_adapter);
 	RETURN_FALSE_IF_FAILED(hr);
+
+	[=]()
+	{
+		CComPtr<IDXGIAdapter> dxgi_adapter;
+		int monitor = 0;
+		while (DXGI_ERROR_NOT_FOUND != dxgi_factory_->EnumAdapters(monitor, &dxgi_adapter))
+		{
+			DXGI_ADAPTER_DESC adapter_desc = { 0 };
+			dxgi_adapter->GetDesc(&adapter_desc);
+			CString output_text;
+			output_text.Format(L"Adapter:%d, %s\r\n", monitor, adapter_desc.Description);
+			OutputDebugString(output_text);
+
+			int output = 0;
+			CComPtr<IDXGIOutput> dxgi_output;
+			while (DXGI_ERROR_NOT_FOUND != dxgi_adapter->EnumOutputs(output, &dxgi_output))
+			{
+				DXGI_OUTPUT_DESC output_desc = { 0 };
+				dxgi_output->GetDesc(&output_desc);
+				output_text.Format(L"\tOutput:%d, %s\r\n", output, output_desc.DeviceName);
+				OutputDebugString(output_text);
+
+				++output;
+				dxgi_output.Release();
+			}
+
+			++monitor;
+			dxgi_adapter.Release();
+		}
+	}();
 
 	D3D_FEATURE_LEVEL feature_level;
 	hr = D3D11CreateDevice(dxgi_adapter,
@@ -216,6 +250,7 @@ bool D3D11Initializer::Initialize(int width, int height, HWND hwnd, int monitor,
 	viewport.MaxDepth = 1.0f;
 	d3d11_device_ctx_->RSSetViewports(1, &viewport);
 
+	timer_.Start();
 	return true;
 }
 
@@ -231,6 +266,21 @@ void D3D11Initializer::Render()
 	d3d11_device_ctx_->ClearDepthStencilView(d3d11_depth_stencil_view_, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 	dxgi_swap_chain_->Present(0, 0);
+
+	timer_.Tick();
+
+	static std::deque<double> total_time_queue;
+#define MAX_TOTAL_FRAME_COUNT 60
+	total_time_queue.push_back(timer_.Total());
+	if (total_time_queue.size() > MAX_TOTAL_FRAME_COUNT)
+	{
+		total_time_queue.pop_front();
+	}
+
+	CString fps_info_text;
+	fps_info_text.Format(L"Total:%f, Delta:%f, FPS:%f\r\n", timer_.Total(), timer_.Delta(), 
+		total_time_queue.size()/(total_time_queue.back()-total_time_queue.front()));
+	//OutputDebugString(fps_info_text);
 }
 
 void D3D11Initializer::Uninitialize()
@@ -243,4 +293,6 @@ void D3D11Initializer::Uninitialize()
 	d3d11_device_.Release();
 	dxgi_swap_chain_.Release();
 	dxgi_factory_.Release();
+
+	timer_.Stop();
 }

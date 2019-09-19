@@ -136,10 +136,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    RECT clnt_rect;
    GetClientRect(hWnd, &clnt_rect);
 
-   if (!d3d11_initializer_.InitializeWithDefault(clnt_rect.right - clnt_rect.left,
+   if (!d3d11_initializer_.Initialize(clnt_rect.right - clnt_rect.left,
 	   clnt_rect.bottom - clnt_rect.top,
 	   hWnd,
-	   false))
+	   0))
    {
 	   return FALSE;
    }
