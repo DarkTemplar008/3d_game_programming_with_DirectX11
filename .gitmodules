@@ -1,0 +1,6 @@
+[submodule "Chapter5/DirectXTK"]
+	path = Chapter5/DirectXTK
+	url = https://github.com/microsoft/DirectXTK.git
+[submodule "Chapter5/Xbox-ATG-Samples"]
+	path = Chapter5/Xbox-ATG-Samples
+	url = https://github.com/microsoft/Xbox-ATG-Samples.git
